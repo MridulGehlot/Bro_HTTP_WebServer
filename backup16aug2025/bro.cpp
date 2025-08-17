@@ -46,7 +46,7 @@ static void sendNotFoundError(int clientSocketDescriptor,char *requestURI)
 {
 //will optimize later on
 char header[200],content[1000],response[1200];
-sprintf(content,"<!DOCTYPE html><html><head><meta charset='utf-8'><title>404 Not Found</title></head><body><h1 style='color:red'>Error: 404 Not Found</h1><h3>The Resource [%s] Not Found</h3></body></html>",requestURI);
+sprintf(content,"<!DOCTYPE html><html><head><meta charset='utf-8'><title>404 Not Found</title></head><body><h1 style='color:red'>Error: 404 Not Found</h1><h3>The Resource [/%s] Not Found</h3></body></html>",requestURI);
 int contentLength=strlen(content);
 sprintf(header,"HTTP/1.1 404 Not Found\r\nContent-Type: text/html\nContent-Length : %d\nConnection: close\r\n\r\n",contentLength);
 strcpy(response,header);
@@ -387,8 +387,6 @@ const char *html=R""""(
 </body>
 </html>
 )"""";
-response.setContentType("text/html");
-response<<html;
 });
 bro.listen(6060,[](Error& error){
 if(error.hasError())
