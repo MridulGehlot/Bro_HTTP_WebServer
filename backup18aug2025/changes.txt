@@ -1,0 +1,111 @@
+/whatever/test.html
+
+#include<sys/stat.h>
+class FileSystemUtility
+{
+private:
+FileSystemUtility(){}
+public:
+static bool fileExists(const char *path)
+{
+int x;
+struct stat s;
+x=stat(path,&s);
+if(x!=0) return false;
+if(s.st_mode & S_IFDIR) return false;
+return true;
+}
+static bool directoryExists(const char *path)
+{
+int x;
+struct stat s;
+x=stat(path,&s);
+if(x!=0) return false;
+if(s.st_mode & S_IFDIR) return true;
+return false;
+}
+};
+
+class Validator
+{
+bool isValidPath(string path)
+{
+return FileSystemUtility::directoryExists(path.c_str());
+}
+}
+
+class Bro
+{
+bool serveStaticResource(int csd,const char *requestURI)
+{
+if(this->staticResourcesFolder.length()==0) return false;
+if(!FileSystemUtility::directoryExists(this->staticResourceFolder.c_str())) return false;
+string resourcePath=this->staticResourcePath+string(requestURI);
+if(!FileSystemUtility::fileExists(resourcePath.c_str())) return false;
+FILE *f=fopen(resourcePath.c_str(),"rb");
+if(f==null) return false;
+long fileSize;
+fseek(file,0,SEEK_END);
+fileSize=ftell(f);
+if(fileSize==0)
+{
+fclose(f);
+return false;
+}
+rewind(f); //to move internal pointer to start of file
+char header[200];
+sprintf(header,"HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: %ld\r\nConnection: close\r\n\r\n",fileSize); 
+send(csd,header,strlen(header),0);
+long bytesLeftToRead=fileSize;
+int bytesToRead=4096;
+char buffer[4096];
+while(bytesLeftToRead>0)
+{
+if(bytesLeftToRead<bytesToRead) bytesToRead=bytesLeftToRead;
+fread(buffer,bytesToRead,1,f);
+if(feof(f)) break; //this won't happen in our case
+send(csd,buffer,bytesToRead,0);
+bytesLeftToRead-=bytesToRead;
+}
+fclose(f);
+return true;
+}
+void setStaticResourcesFolder(string staticResourcesFolder)
+{
+if(Validator::isValidPath(staticResourcesFolder))
+{
+this->staticResourcesFolder=staticResourcesFolder;
+}
+else
+{
+string exception=string("Invalid Static Resource Folder Path : ")+staticResourcesFolder;
+throw exception;
+}
+}
+void listen()
+{
+cout<<"request arriver , uri - "<<requestURI<<endl;
+auto urlMappingsIterator=this->urlMappings.find(requestURI);
+if(urlMappingsIterator==this->urlMappings.end())
+{
+if(!serveStaticResource(csd,uri))
+{
+//send Not Found error
+}
+close(csd);
+continue;
+}
+}
+};
+
+int main()
+{
+try
+{
+//old code
+}catch(string s)
+{
+cout<<s<<endl;
+}
+return 0;
+}
