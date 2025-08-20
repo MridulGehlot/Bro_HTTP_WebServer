@@ -1,0 +1,108 @@
+class BroUtilities
+{
+private:
+BroUtilities(){}
+public:
+static void loadMIMETypes(map<string,string> &mimeTypesMap)
+{
+FILE *file;
+file=fopen("bro-data/mime.types","r");
+if(file==NULL) return;
+char *mimeType;
+char *extension;
+char line[200];
+int x;
+while(true)
+{
+fgets(line,200,file);
+if(feof(f)) break;
+if(line[0]=='#') continue;
+//logic to remove \r\n from the end of string starts here
+x=strlen(line)-1;
+while(true)
+{
+if(line[x]=='\r' || line[x]=='\n')
+{
+line[x]='\0';
+x--;
+}
+else break;
+}
+//logic to remove \r\n from the end of string ends here
+mimeType=&line[0];
+for(x=0;line[x]!='\t';x++);
+line[x]='\0';
+x++;
+while(line[x]=='\t') x++;
+while(true)
+{
+extension=&line[x];
+while(line[x]!='\0' && line[x]!=' ') x++;
+if(line[x]=='\0')
+{
+//add entry to map and break the loop
+mimeTypesMap.insert(pair<string,string>(string(extension),string(mimeType)));
+cout<<extension<<" , "<<mimeType<<endl;
+break;
+}
+else
+{
+place \0 on the xth index, add entry to map and increment value of x
+line[x]='\0';
+mimeTypesMap.insert(pair<string,string>(string(extension),string(mimeType)));
+cout<<extension<<" , "<<mimeType<<endl;
+x++;
+}
+}//parsing extensions ends here
+}
+fclose(file);
+}
+};
+class Bro
+{
+private;
+map<string,string> mimeTypes;
+public:
+Bro()
+{
+BroUtilities::loadMIMETypes(mimeTypes);
+if(mimeTypes.size()==0) throw string("bro-data folder has been tampered with");
+}
+};
+class FileSystemUtility
+{
+static string getFileExtension(const char *path)
+{
+int x;
+x=strlen(path)-1;
+while(x>=0 && path[x]!='.') x--;
+if(x==-1 || path[x]!='.') return string("");
+return string(path+(x+1));
+}
+};
+
+sendStaticResources
+{
+rewind(file);
+string extension,mimeType;
+extension=FileSystemUtility::getFileExtension(resourcePath.c_str());
+if(extension.length()>0)
+{
+auto mimeTypesIterator=mimeTypes.find(extension);
+if(mimeTypesIterator!=mimeTypes.end())
+{
+mimeType=mimeTypesIterator->second;
+}
+else mimeType=string("text/html");
+}
+else
+{
+mimeType=string("text/html");
+}
+cout<<resourcePath<<" , "<<extension<<" , "<<mimeType<<endl;
+}
+
+
+BRO 
+copy paste get -> post and change __POST__
+int main() new mappings testing
