@@ -1,0 +1,28 @@
+void createDataMap(char *str,map<string,string> &dataMap)
+{
+char *ptr1,*ptr2;
+ptr1=str;
+ptr2=str;
+while(true)
+{
+while(*ptr2!='\0' && *ptr2!='=') ptr2++;
+if(*ptr2=='\0') return;
+*ptr2='\0';
+string key=string(ptr1);
+ptr2++;
+ptr1=ptr2;
+while(*ptr2!='\0' && *ptr2!='&') ptr2++;
+if(*ptr2=='\0')
+{
+dataMap.insert(pair<string,string>(key,string(ptr1)));
+break;
+}
+else
+{
+*ptr2='\0';
+dataMap.insert(pair<string,string>(key,string(ptr1)));
+ptr2++;
+ptr1=ptr2;
+}
+}//end of infinite loop
+}

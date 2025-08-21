@@ -339,6 +339,7 @@ auto it=response.content.begin();
 while(it!=response.content.end())
 {
 string str=*it;
+cout<<str<<endl;
 send(clientSocketDescriptor,str.c_str(),str.length(),0);
 ++it;
 }
@@ -626,68 +627,108 @@ int main()
 try
 {
 Bro bro;
-bro.setStaticResourcesFolder("whatever");
-bro.get("/save_data_test1",[](Request& request,Response& response)->void {
-
-string name=request["nm"];
-string city=request["ct"];
-cout<<"Name - "<<name<<endl;
-cout<<"City - "<<city<<endl;
-
-const char *html=R""""(
+bro.setStaticResourcesFolder("static");
+typedef struct _student
+{
+int rollNumber;
+char name[21];
+char gender;
+}Student;
+bro.get("/",[](Request& request,Response& response)->void {
+response<<R""""(
 <!DOCTYPE HTML>
 <html>
 <head>
-<meta chartset='utf-8'>
-<title>Testing</title>
+<meta charset='utf-8'>
+<title>School</title>
 </head>
 <body>
-<h1>Test Case 1 : GET With Query String</h1>
-<h3>Saved Data At the Server Side</h3>
-<a href='index.html'>Home</a>
+<h1>XYZ Senior Secondary School</h1><br>
+<table border='1'>
+<thead>
+<tr><th>S.no.</th><th>Roll Number</th><th>Name</th><th>Gender</th><th>Edit</th><th>Delete</th></tr>
+</thead>
+<tbody>
+)"""";
+Student stud;
+FILE *file=fopen("student.dat","rb");
+int sno=0;
+char str[20];
+if(file!=NULL)
+{
+while(true)
+{
+fread(&stud,sizeof(Student),1,file);
+if(feof(file)) break;
+sno++;
+itoa(sno,str,10);
+response<<"<tr><td>"<<str<<"</td>";
+itoa(stud.rollNumber,str,10);
+response<<"<td>"<<str<<"</td>";
+response<<"<td>"<<stud.name<<"</td>";
+if(stud.gender=='M')
+{
+response<<"<td><img src='images/male.png' style='height:30px'></td>";
+}
+else
+{
+response<<"<td><img src='images/female.png' style='height:30px'></td>";
+}
+itoa(stud.rollNumber,str,10);
+response<<"<td><a href='editStudent?rollNumber="<<str<<"'>Edit</a></td>";
+response<<"<td><a href='deleteStudent?rollNumber="<<str<<"'>Delete</a></td></tr>";
+}
+}
+if(sno==0)
+{
+response<<"<tr><td colspan='6' style='text-align:center'>No Students Found</td></tr>";
+}
+fclose(file);
+response<<R""""(
+</tbody>
+<br>
+<br>
+<p>why it is above</p>
+<a href='StudentAddForm.html'>Add Student</a>
 </body>
 </html>
 )"""";
 response.setContentType("text/html");
-response<<html;
 });
-bro.post("/save_data_test2",[](Request& request,Response& response)->void {
-const char *html=R""""(
+bro.get("/addStudent",[](Request& request,Response& response)->void {
+string rollNumber=request["rollNumber"];
+string name=request["name"];
+string gender=request["gender"];
+Student stud;
+int rl=atoi(rollNumber.c_str());
+stud.rollNumber=rl;
+strcpy(stud.name,name.c_str());
+stud.gender=gender[0];
+FILE *f=fopen("student.dat","ab");
+if(f!=NULL)
+{
+fwrite(&stud,sizeof(Student),1,f);
+fclose(f);
+}
+response<<R""""(
 <!DOCTYPE HTML>
 <html>
 <head>
 <meta chartset='utf-8'>
-<title>Testing</title>
+<title>School</title>
 </head>
 <body>
-<h1>Test Case 2 : POST With Form Data</h1>
-<h3>Saved Data At the Server Side</h3>
-<a href='index.html'>Home</a>
-</body>
-</html>
-)"""";
-response.setContentType("text/html");
-response<<html;
-});
-bro.get("/someResource",[](Request& request,Response& response){
-const char *html=R""""(
-<!DOCTYPE HTML>
-<html>
-<head>
-<meta chartset='utf-8'>
-<title>Resource Page</title>
-</head>
-<body>
-<h1>This is the Resource Page</h1>
-<div>
-<p>some important Resources</p>
-</div>
+<h1>Student (Add Module)</h1>
+<br>
+<h3>Student Added Successfully</h3>
+<form action='/'>
+<button type='submit'>OK</button>
+</form>
 <a href='/'>Home</a>
 </body>
 </html>
 )"""";
 response.setContentType("text/html");
-response<<html;
 });
 bro.listen(6060,[](Error& error){
 if(error.hasError())

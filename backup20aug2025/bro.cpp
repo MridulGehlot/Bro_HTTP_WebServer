@@ -19,51 +19,6 @@ class BroUtility
 private:
 BroUtility(){}
 public:
-static bool isHexChar(int w)
-{
-if(w>=48 && w<=57) return true;
-if(w>='a' && w<='z') return true;
-if(w>='A' && w<='Z') return true;
-return false;
-}
-static void decode(char *encodedString,char *decodedString)
-{
-char *ptr=encodedString;
-char *d=decodedString;
-int i,m;
-i=0;
-while(*ptr!='\0')
-{
-if(*ptr=='+')
-{
-d[i]=' ';
-ptr++;
-i++;
-continue;
-}
-if(*ptr!='%')
-{
-d[i]=*ptr;
-ptr++;
-i++;
-continue;
-}
-ptr++;
-if(isHexChar(*ptr) && isHexChar(*(ptr+1)))
-{
-sscanf(ptr,"%2x",&m);
-d[i]=m;
-i++;
-ptr+=2;
-}
-else
-{
-i=0;
-break;
-}
-}
-d[i]='\0';
-}
 static void loadMIMETypes(map<string,string> &mimeTypesMap)
 {
 FILE *file;
@@ -102,7 +57,7 @@ if(line[x]=='\0')
 {
 //add Entry to map and break the loop
 mimeTypesMap.insert(pair<string,string>(string(extension),string(mimeType)));
-//cout<<extension<<" , "<<mimeType<<endl;
+cout<<extension<<" , "<<mimeType<<endl;
 break;
 }
 else
@@ -111,7 +66,7 @@ else
 line[x]='\0';
 x++;
 mimeTypesMap.insert(pair<string,string>(string(extension),string(mimeType)));
-//cout<<extension<<" , "<<mimeType<<endl;
+cout<<extension<<" , "<<mimeType<<endl;
 }
 }//parsing ends here
 }
@@ -246,9 +201,7 @@ createDataMap(dataInRequest,dataMap);
 }
 void createDataMap(char *str,map<string,string> &dataMap)
 {
-int keyLength,valueLength;
 char *ptr1,*ptr2;
-char *decoded;
 ptr1=str;
 ptr2=str;
 while(true)
@@ -256,31 +209,19 @@ while(true)
 while(*ptr2!='\0' && *ptr2!='=') ptr2++;
 if(*ptr2=='\0') return;
 *ptr2='\0';
-keyLength=ptr2-ptr1;
-decoded=new char[keyLength+1];
-BroUtility::decode(ptr1,decoded);
-string key=string(decoded);
-delete [] decoded;
+string key=string(ptr1);
 ptr2++;
 ptr1=ptr2;
 while(*ptr2!='\0' && *ptr2!='&') ptr2++;
 if(*ptr2=='\0')
 {
-valueLength=ptr2-ptr1;
-decoded=new char[valueLength+1];
-BroUtility::decode(ptr1,decoded);
-dataMap.insert(pair<string,string>(key,string(decoded)));
-delete [] decoded;
+dataMap.insert(pair<string,string>(key,string(ptr1)));
 break;
 }
 else
 {
 *ptr2='\0';
-valueLength=ptr2-ptr1;
-decoded=new char[valueLength+1];
-BroUtility::decode(ptr1,decoded);
-dataMap.insert(pair<string,string>(key,string(decoded)));
-delete [] decoded;
+dataMap.insert(pair<string,string>(key,string(ptr1)));
 ptr2++;
 ptr1=ptr2;
 }
@@ -408,8 +349,8 @@ else mimeType=string("text/html");
 }
 else mimeType=string("text/html");
 char header[200];
-//cout<<"Serving Static Resources - - - - - -"<<endl;
-//cout<<resourcePath<<" , "<<extension<<" , "<<mimeType<<endl;
+cout<<"Serving Static Resources - - - - - -"<<endl;
+cout<<resourcePath<<" , "<<extension<<" , "<<mimeType<<endl;
 sprintf(header,"HTTP/1.1 200 OK\r\nContent-Type: %s\r\nContent-Length: %ld\r\nConnection: close\r\n\r\n",mimeType.c_str(),fileSize); 
 send(clientSocketDescriptor,header,strlen(header),0);
 long bytesLeftToRead=fileSize;
@@ -589,7 +530,7 @@ if(requestURI[i]=='?')
 requestURI[i]='\0';
 dataInRequest=requestURI+i+1;
 }
-//cout<<"Request URI - "<<requestURI<<endl;
+cout<<"Request URI - "<<requestURI<<endl;
 auto urlMappingsIterator=this->urlMappings.find(requestURI);
 if(urlMappingsIterator==this->urlMappings.end())
 {

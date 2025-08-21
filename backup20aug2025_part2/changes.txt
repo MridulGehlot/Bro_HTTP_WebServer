@@ -1,0 +1,70 @@
+eg1.c
+//printing ASCII chart
+int main()
+{
+for(int j=0;j<=255;j++) printf("%x %d %c\n",j,j,j);
+}
+
+eg2.c
+//hexadecimal to decimal
+int main()
+{
+char hh[11];
+sprintf(hh,"%x",65);
+printf("%s\n",hh);
+//A(65) output ->41
+int i;
+sscanf(hh,"%2x",&i);
+printf("%d\n",i); o/p-> 65
+}
+
+eg3.cpp
+bool isHexChar(int w)
+{
+if(w>=48 && w<=57) return true;
+if(w>='a' && w<='z') return true;
+if(w>='A' && w<='Z') return true;
+return false;
+}
+int main()
+{
+char e[101]={"ABCD%41%44CD+%2bpqr%29"};
+char d[101];
+char *ptr;
+int i,m;
+ptr=e;
+i=0;
+while(*ptr!='\0')
+{
+if(*ptr=='+')
+{
+d[i]=' ';
+ptr++;
+i++;
+continue;
+}
+if(*ptr!='%')
+{
+d[i]=*ptr;
+ptr++;
+i++;
+continue;
+}
+ptr++
+if(isHexChar(*ptr) && isHexChar(*(ptr+1)))
+{
+sscanf(ptr,"%2x",&m);
+d[i]=m;
+i++;
+ptr+=2;
+}
+else
+{
+i=0;
+break;
+}
+}
+d[i]='\0';
+printf("Decoded String is as follows\n");
+printf("\n\n %s \n\n",d);
+}
