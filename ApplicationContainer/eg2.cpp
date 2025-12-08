@@ -5,7 +5,12 @@
 using namespace std;
 class Container
 {
-map<string,void *> dataSet;
+typedef struct _bag
+{
+void *ptr;
+int size;
+}Bag;
+map<string,Bag> dataSet;
 public:
 template<class whatever>
 void set(string keyName,whatever something)
@@ -14,7 +19,10 @@ cout<<sizeof(something)<<endl;
 void *ptr;
 ptr=malloc(sizeof(something));
 memcpy(ptr,&something,sizeof(something));
-dataSet.insert(pair<string,void *>(keyName,ptr));
+Bag bag;
+bag.ptr=ptr;
+bag.size=sizeof(something);
+dataSet.insert(pair<string,Bag>(keyName,bag));
 }
 template<class Cool>
 void get(string keyName,Cool anything,bool *success)
@@ -26,7 +34,14 @@ if(iterator==dataSet.end())
 if(success) *success=false;
 return;
 }
-memcpy(anything,iterator->second,sizeof(*anything));
+Bag bag;
+bag=iterator->second;
+if(bag.size!=sizeof(*anything))
+{
+if(success) *success=false;
+return;
+}
+memcpy(anything,bag.ptr,sizeof(*anything));
 if(success) *success=true;
 }
 };
