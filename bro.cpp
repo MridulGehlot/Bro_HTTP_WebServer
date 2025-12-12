@@ -14,6 +14,97 @@
 #include<unistd.h>
 using namespace std;
 //writer of Bro Http Server
+
+enum __container_operation_failure_reason__{__KEY_EXISTS__,__KEY_DOES_NOT_EXIST__,__OUT_OF_MEMORY__,__VALUE_SIZE_MISMATCH__};
+
+class Container
+{
+typedef struct _bag
+{
+void *ptr;
+int size;
+}Bag;
+map<string,Bag> dataSet;
+public:
+template<class whatever>
+void set(string keyName,whatever something,bool *success,__container_operation_failure_reason__ *reason)
+{
+auto iterator=dataSet.find(keyName);
+if(iterator!=dataSet.end())
+{
+if(reason) *reason={__KEY_EXISTS__};
+if(success) *success=false;
+return;
+}
+void *ptr;
+ptr=malloc(sizeof(something));
+if(ptr==NULL)
+{
+if(reason) *reason={__OUT_OF_MEMORY__};
+if(success) *success=false;
+return;
+}
+memcpy(ptr,&something,sizeof(something));
+Bag bag;
+bag.ptr=ptr;
+bag.size=sizeof(something);
+dataSet.insert(pair<string,Bag>(keyName,bag));
+if(success) *success=true;
+}
+template<class Cool>
+void get(string keyName,Cool anything,bool *success,__container_operation_failure_reason__ *reason)
+{
+auto iterator=dataSet.find(keyName);
+if(iterator==dataSet.end())
+{
+if(reason) *reason={__KEY_DOES_NOT_EXIST__};
+if(success) *success=false;
+return;
+}
+Bag bag;
+bag=iterator->second;
+if(bag.size!=sizeof(*anything))
+{
+if(reason) *reason={__VALUE_SIZE_MISMATCH__};
+if(success) *success=false;
+return;
+}
+memcpy(anything,bag.ptr,sizeof(*anything));
+if(success) *success=true;
+}
+
+template<class Cool>
+void remove(string keyName,Cool anything,bool *success,__container_operation_failure_reason__ *reason)
+{
+auto iterator=dataSet.find(keyName);
+if(iterator==dataSet.end())
+{
+if(reason) *reason={__KEY_DOES_NOT_EXIST__};
+if(success) *success=false;
+return;
+}
+Bag bag;
+bag=iterator->second;
+if(bag.size!=sizeof(*anything))
+{
+if(reason) *reason={__VALUE_SIZE_MISMATCH__};
+if(success) *success=false;
+return;
+}
+memcpy(anything,bag.ptr,sizeof(*anything));
+free(bag.ptr); //to release the memory allocated by Bro Server Programmer
+if(success) *success=true;
+}
+bool contains(string keyName)
+{
+auto iterator=this->dataSet.find(keyName);
+return iterator!=this->dataSet.end();
+}
+};
+
+class ApplicationLevelContainer: public Container
+{};
+
 class BroUtility
 {
 private:
@@ -345,17 +436,42 @@ send(clientSocketDescriptor,str.c_str(),str.length(),0);
 }
 };
 enum __request_method__{__GET__,__POST__,__PUT__,__DELETE__,__HEAD__,__OPTIONS__,__TRACE__,__CONNECT__};
+
+class Function
+{
+public:
+virtual void doService(Request &,Response &)=0;
+};
+
 typedef struct __url_mapping__
 {
 __request_method__ methodType;
-void (*mappedFunction)(Request&,Response&);
+Function *function;
+//void (*mappedFunction)(Request&,Response&);
 }URLMapping;
+
+class SimpleFunction:public Function
+{
+private:
+void (*mappedFunction)(Request&,Response&);
+public:
+SimpleFunction(void (*mappedFunction)(Request&,Response&))
+{
+this->mappedFunction=mappedFunction;
+}
+void doService(Request &request,Response &response)
+{
+this->mappedFunction(request,response);
+}
+};
+
 class Bro
 {
 private:
 string staticResourcesFolder;
 map<string,URLMapping> urlMappings;
 map<string,string> mimeTypes;
+ApplicationLevelContainer applicationLevelContainer;
 public:
 Bro()
 {
@@ -430,14 +546,16 @@ void get(string url,void (*callBack)(Request&,Response&))
 {
 if(Validator::isValidURLFormat(url))
 {
-this->urlMappings.insert(pair<string,URLMapping>(url,{__GET__,callBack}));
+Function *function=new SimpleFunction(callBack);
+this->urlMappings.insert(pair<string,URLMapping>(url,{__GET__,function}));
 }
 }
 void post(string url,void (*callBack)(Request&,Response&))
 {
 if(Validator::isValidURLFormat(url))
 {
-this->urlMappings.insert(pair<string,URLMapping>(url,{__POST__,callBack}));
+Function *function=new SimpleFunction(callBack);
+this->urlMappings.insert(pair<string,URLMapping>(url,{__POST__,function}));
 }
 }
 void listen(int portNumber,void (*callBack)(Error&))
@@ -612,7 +730,8 @@ continue;
 //code to parse header and payload ends here
 Request request(methodType,requestURI,httpVersion,dataInRequest);
 Response response;
-urlMapping.mappedFunction(request,response);
+//urlMapping.mappedFunction(request,response);
+urlMapping.function->doService(request,response);
 HttpResponseUtility::sendResponse(clientSocketDescriptor,response);
 closesocket(clientSocketDescriptor);
 //lot of code here
