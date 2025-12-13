@@ -465,6 +465,22 @@ this->mappedFunction(request,response);
 }
 };
 
+class ApplicationLevelContainerDependentFunction:public Function
+{
+void (*mappedFunction)(Request &,Response &,ApplicationLevelContainer &);
+ApplicationLevelContainer *p2ApplicationLevelContainer;
+public:
+ApplicationLevelContainerDependentFunction(void (*mappedFunction)(Request &,Response &,ApplicationLevelContainer &),ApplicationLevelContainer *p2ApplicationLevelContainer)
+{
+this->mappedFunction=mappedFunction;
+this->p2ApplicationLevelContainer=p2ApplicationLevelContainer;
+}
+void doService(Request &request,Response &response)
+{
+this->mappedFunction(request,response,*p2ApplicationLevelContainer);
+}
+};
+
 class Bro
 {
 private:
@@ -550,6 +566,16 @@ Function *function=new SimpleFunction(callBack);
 this->urlMappings.insert(pair<string,URLMapping>(url,{__GET__,function}));
 }
 }
+
+void get(string url,void (*callBack)(Request &,Response &,ApplicationLevelContainer &))
+{
+if(Validator::isValidURLFormat(url))
+{
+Function *function=new ApplicationLevelContainerDependentFunction(callBack,&(this->applicationLevelContainer));
+this->urlMappings.insert(pair<string,URLMapping>(url,{__GET__,function}));
+}
+}
+
 void post(string url,void (*callBack)(Request&,Response&))
 {
 if(Validator::isValidURLFormat(url))
@@ -770,6 +796,59 @@ const char *html=R""""(
 response.setContentType("text/html");
 response<<html;
 });
+
+
+bro.get("/firstCartoonFilm",[](Request& request,Response& response,ApplicationLevelContainer &cc) -> void {
+string *str;
+str=new string("The Jungle Book");
+cc.set("firstFilm",str,NULL,NULL);
+const char *html=R""""(
+<!DOCTYPE HTML>
+<html>
+<head>
+<meta chartset='utf-8'>
+<title>Bro Test Cases</title>
+</head>
+<body>
+<h1>First Cartoon Film</h1>
+<h3>The Jungle Book</h3>
+<a href='/secondCartoonFilm'>Watch Next Movie</a>
+</body>
+</html>
+)"""";
+response.setContentType("text/html");
+response<<html;
+});
+bro.get("/secondCartoonFilm",[](Request& request,Response& response,ApplicationLevelContainer &cc) -> void {
+string *str;
+cc.get("firstFilm",&str,NULL,NULL);
+response.setContentType("text/html");
+const char *html1=R""""(
+<!DOCTYPE HTML>
+<html>
+<head>
+<meta chartset='utf-8'>
+<title>Bro Test Cases</title>
+</head>
+<body>
+<h1>First Cartoon Film was
+)"""";
+response<<html1;
+response<<*str;
+const char *html2=R""""(
+</h1>
+<br><br>
+<h1>Second Cartoon Film</h1>
+<h3>MG's Life Story</h3>
+<a href='/secondCartoonFilm'>Watch Next Movie</a>
+</body>
+</html>
+)"""";
+response<<html2;
+});
+
+
+
 bro.post("/save_data_test2",[](Request& request,Response& response)->void {
 const char *html=R""""(
 <!DOCTYPE HTML>
