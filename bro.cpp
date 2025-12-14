@@ -15,6 +15,11 @@
 using namespace std;
 //writer of Bro Http Server
 
+#define _forward_(request,url) \
+request.forwardTo(url); \
+return;
+
+
 enum __container_operation_failure_reason__{__KEY_EXISTS__,__KEY_DOES_NOT_EXIST__,__OUT_OF_MEMORY__,__VALUE_SIZE_MISMATCH__};
 
 class Container
@@ -325,6 +330,7 @@ char *methodType;
 char *requestURI;
 char *httpVersion;
 map<string,string> dataMap;
+string _forwardTo;
 Request(char *methodType,char *requestURI,char *httpVersion,char *dataInRequest)
 {
 this->methodType=methodType;
@@ -334,6 +340,14 @@ if(dataInRequest!=NULL && strcmp(methodType,"get")==0)
 {
 createDataMap(dataInRequest,dataMap);
 }
+}
+string forwardToWhichResource()
+{
+return this->_forwardTo;
+}
+bool isToBeForwarded()
+{
+return this->_forwardTo.length()>0;
 }
 void createDataMap(char *str,map<string,string> &dataMap)
 {
@@ -378,6 +392,10 @@ ptr1=ptr2;
 }//end of infinite loop
 }
 public:
+void forwardTo(string _forwardTo)
+{
+this->_forwardTo=_forwardTo;
+}
 string operator[](string key)
 {
 auto iterator=dataMap.find(key);
@@ -755,10 +773,39 @@ continue;
 //code to parse header and payload starts here
 //code to parse header and payload ends here
 Request request(methodType,requestURI,httpVersion,dataInRequest);
-Response response;
 //urlMapping.mappedFunction(request,response);
+
+while(true)
+{
+Response response;
 urlMapping.function->doService(request,response);
+if(!request.isToBeForwarded())
+{
 HttpResponseUtility::sendResponse(clientSocketDescriptor,response);
+break;
+}
+//copy pasted from above
+string forwardTo=request.forwardToWhichResource();
+request.forwardTo(string(""));
+urlMappingsIterator=this->urlMappings.find(forwardTo);
+if(urlMappingsIterator==this->urlMappings.end())
+{
+if(!serveStaticResource(clientSocketDescriptor,forwardTo.c_str()))
+{
+HttpErrorStatusUtility::sendNotFoundError(clientSocketDescriptor,requestURI);
+}
+break;
+}
+urlMapping=urlMappingsIterator->second;
+if(urlMapping.methodType==__GET__ && strcmp(methodType,"get")!=0)
+{
+HttpErrorStatusUtility::sendMethodNotAllowedError(clientSocketDescriptor,methodType,requestURI);
+break;
+}
+//some more if conditions for other request methods
+//copy paste ends here
+}//infinte loop for request forwarding
+
 closesocket(clientSocketDescriptor);
 //lot of code here
 }//Infinite Loop ends Here
@@ -772,6 +819,37 @@ try
 {
 Bro bro;
 bro.setStaticResourcesFolder("whatever");
+
+//testing Request Forwarding Feature
+bro.get("/coolOne",[](Request& request,Response& response)->void {
+cout<<"Some Processing is done at server side for coolOne"<<endl;
+//request.forwardTo(string("/coolTwo"));
+// have to write like this
+_forward_(request,string("/coolTwo"));
+// if user wants to write request.forwardTo  he should not write anything below this
+cout<<"This Line Should not get execute"<<endl;
+});
+bro.get("/coolTwo",[](Request& request,Response& response)->void {
+cout<<"Some Processing is done at server side for coolTwo"<<endl;
+request.forwardTo(string("/SomethingCool.html"));
+});
+bro.get("/coolThree",[](Request& request,Response& response)->void {
+const char *html=R""""(
+<!DOCTYPE HTML>
+<html>
+<head>
+<meta chartset='utf-8'>
+<title>Bro Test Cases</title>
+</head>
+<body>
+<h1>Cool Three</h1>
+</body>
+</html>
+)"""";
+response<<html;
+response.setContentType("text/html");
+});
+
 bro.get("/save_data_test1",[](Request& request,Response& response)->void {
 
 string name=request["nm"];
