@@ -461,6 +461,53 @@ public:
 virtual void doService(Request &,Response &)=0;
 };
 
+class StartupFunction
+{
+public:
+virtual void run()=0;
+virtual int getPriorityNumber()=0;
+};
+class SimpleStartupFunction:public StartupFunction
+{
+void (*startupFunction)(void);
+int priorityNumber;
+public:
+SimpleStartupFunction(int priorityNumber,void (*startupFunction)(void))
+{
+this->priorityNumber=priorityNumber;
+this->startupFunction=startupFunction;
+}
+int getPriorityNumber()
+{
+return this->priorityNumber;
+}
+void run()
+{
+this->startupFunction();
+}
+};
+class ApplicationLevelContainerDependentStartupFunction:public StartupFunction
+{
+void (*startupFunction)(ApplicationLevelContainer &);
+int priorityNumber;
+ApplicationLevelContainer *p2ApplicationLevelContainer;
+public:
+ApplicationLevelContainerDependent(int priorityNumber,void (*startupFunction)(ApplicationLevelContainer &),ApplicationLevelContainer *p2ApplicationLevelContainer)
+{
+this->priorityNumber=priorityNumber;
+this->startupFunction=startupFunction;
+this->p2ApplicationLevelContainer=p2ApplicationLevelContainer;
+}
+int getPriorityNumber()
+{
+return this->priorityNumber;
+}
+void run()
+{
+this->startupFunction(*p2ApplicationLevelContainer);
+}
+};
+
 typedef struct __url_mapping__
 {
 __request_method__ methodType;
@@ -819,6 +866,31 @@ try
 {
 Bro bro;
 bro.setStaticResourcesFolder("whatever");
+
+bro.addStartupService(2,[](){
+cout<<"-------------------------"<<endl;
+cout<<"Some Cool function that gets called on startup"<<endl;
+cout<<"The Priority Number set for this function is 2"<<endl;
+cout<<"-------------------------"<<endl;
+});
+bro.addStartupService(1,[](){
+cout<<"-------------------------"<<endl;
+cout<<"Some Great function that gets called on startup"<<endl;
+cout<<"The Priority Number set for this function is 1"<<endl;
+cout<<"-------------------------"<<endl;
+});
+bro.addStartupService(1,[](){
+cout<<"-------------------------"<<endl;
+cout<<"Some too too too Great function that gets called on startup"<<endl;
+cout<<"The Priority Number set for this function is 1"<<endl;
+cout<<"-------------------------"<<endl;
+});
+bro.addStartupService(3,[](ApplicationLevelContainer &alc){
+cout<<"-------------------------"<<endl;
+cout<<"Some awesome function that gets called on startup"<<endl;
+cout<<"The Priority Number set for this function is 3"<<endl;
+cout<<"-------------------------"<<endl;
+});
 
 //testing Request Forwarding Feature
 bro.get("/coolOne",[](Request& request,Response& response)->void {
