@@ -492,7 +492,7 @@ void (*startupFunction)(ApplicationLevelContainer &);
 int priorityNumber;
 ApplicationLevelContainer *p2ApplicationLevelContainer;
 public:
-ApplicationLevelContainerDependent(int priorityNumber,void (*startupFunction)(ApplicationLevelContainer &),ApplicationLevelContainer *p2ApplicationLevelContainer)
+ApplicationLevelContainerDependentStartupFunction(int priorityNumber,void (*startupFunction)(ApplicationLevelContainer &),ApplicationLevelContainer *p2ApplicationLevelContainer)
 {
 this->priorityNumber=priorityNumber;
 this->startupFunction=startupFunction;
@@ -623,6 +623,12 @@ bytesLeftToRead-=bytesToRead;
 fclose(f);
 return true;
 }
+
+void addStartupService(int priorityNumber,void (*startupFunction)(void))
+{}
+void addStartupService(int priorityNumber,void (*startupFunction)(ApplicationLevelContainer &))
+{}
+
 void get(string url,void (*callBack)(Request&,Response&))
 {
 if(Validator::isValidURLFormat(url))
