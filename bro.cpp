@@ -1,4 +1,6 @@
 #include<bits/stdc++.h>
+#include<queue>
+#include<vector>
 #include<sys/stat.h>
 #include<iostream>
 #include<map>
@@ -546,6 +548,15 @@ this->mappedFunction(request,response,*p2ApplicationLevelContainer);
 }
 };
 
+class StartupFunctionComparator
+{
+public:
+int operator()(StartupFunction *e,StartupFunction *f)
+{
+return !(e->getPriorityNumber()<f->getPriorityNumber());
+}
+};
+
 class Bro
 {
 private:
@@ -553,6 +564,7 @@ string staticResourcesFolder;
 map<string,URLMapping> urlMappings;
 map<string,string> mimeTypes;
 ApplicationLevelContainer applicationLevelContainer;
+priority_queue<StartupFunction *,vector<StartupFunction *>,StartupFunctionComparator> startupFunctions;
 public:
 Bro()
 {
@@ -625,9 +637,17 @@ return true;
 }
 
 void addStartupService(int priorityNumber,void (*startupFunction)(void))
-{}
+{
+StartupFunction *sf;
+sf=new SimpleStartupFunction(priorityNumber,startupFunction);
+this->startupFunctions.push(sf);
+}
 void addStartupService(int priorityNumber,void (*startupFunction)(ApplicationLevelContainer &))
-{}
+{
+StartupFunction *sf;
+sf=new ApplicationLevelContainerDependentStartupFunction(priorityNumber,startupFunction,&(this->applicationLevelContainer));
+this->startupFunctions.push(sf);
+}
 
 void get(string url,void (*callBack)(Request&,Response&))
 {
@@ -700,9 +720,19 @@ Error error("Unable to Accept Client Connections");
 callBack(error);
 return;
 }
+
+//call all startup functions
+StartupFunction *startupFunction;
+while(!startupFunctions.empty())
+{
+startupFunction=startupFunctions.top();
+startupFunctions.pop();
+startupFunction->run();
+}
+//call all startup functions ends here
+
 Error error("");
 callBack(error);
-
 //Infinite Loop Starts Here
 while(true)
 {
