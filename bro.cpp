@@ -1073,6 +1073,53 @@ const char *html=R""""(
 response.setContentType("text/html");
 response<<html;
 });
+
+
+bro.get("/slogan",[](Request& request,Response& response){
+string slogan,line;
+ifstream iFile("data/sofd.data");
+while(true)
+{
+if(!(getline(iFile,line))) break;
+if(slogan.length()>0) slogan+=string("<br>");
+slogan+=line;
+}
+iFile.close();
+response.setContentType("text/html");
+const char *html=R""""(
+<!DOCTYPE HTML>
+<html>
+<head>
+<meta chartset='utf-8'>
+<title>Slogan</title>
+</head>
+<body>
+<h1>MG's Word</h1>
+)"""";
+response<<html;
+response<<slogan.c_str();
+const char *html2=R""""(
+</body>
+</html>
+)"""";
+response<<html2;
+});
+
+bro.get("/sloganOfTheDay",[](Request& request,Response& response){
+string slogan,line;
+ifstream iFile("data/sofd.data");
+while(true)
+{
+if(!(getline(iFile,line))) break;
+if(slogan.length()>0) slogan+=string("<br>");
+slogan+=line;
+}
+iFile.close();
+request.set("sloganOfTheDay",slogan);
+_forward_(request,string("/wordsOfWisdom.chtml"));
+});
+
+
 bro.listen(9090,[](Error& error){
 if(error.hasError())
 {

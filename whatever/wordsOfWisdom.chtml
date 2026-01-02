@@ -1,0 +1,11 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<meta chartset='utf-8'>
+<title>Slogan</title>
+</head>
+<body>
+<h1>MG's Word</h1>
+${sloganOfTheDay}
+</body>
+</html>
