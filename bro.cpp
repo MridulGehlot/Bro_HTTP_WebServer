@@ -7,8 +7,10 @@
 #include<forward_list>
 #ifdef _WIN32
 #include<windows.h>
+const char *PATH_SEPARATOR="\\";
 #endif
 #ifdef linux
+const char *PATH_SEPARATOR="/";
 #include<arpa/inet.h>
 #include<sys/socket.h>
 #endif
@@ -221,6 +223,16 @@ class FileSystemUtility
 private:
 FileSystemUtility(){}
 public:
+static bool createDirectory(const char *directoryName)
+{
+return mkdir(directoryName)==0;
+}
+static unsigned int getLastUpdatedTime(const char *fileName)
+{
+struct stat attributes;
+stat(fileName,&attributes);
+return attributes.st_mtime;
+}
 static bool fileExists(const char *path)
 {
 int x;
@@ -394,6 +406,10 @@ ptr1=ptr2;
 }//end of infinite loop
 }
 public:
+void set(string name,string value)
+{
+//will write implementation later on
+}
 void forwardTo(string _forwardTo)
 {
 this->_forwardTo=_forwardTo;
@@ -556,7 +572,57 @@ int operator()(StartupFunction *e,StartupFunction *f)
 return !(e->getPriorityNumber()<f->getPriorityNumber());
 }
 };
+class TemplateEngine
+{
+private:
+static void createVMDFileName(const char *chtmlFileName,char *vmdFileName)
+{
+char *dotPtr;
+for(;*chtmlFileName!='\0';chtmlFileName++,vmdFileName++)
+{
+if(*chtmlFileName=='.') dotPtr=vmdFileName;
+*vmdFileName=*chtmlFileName;
+}
+*vmdFileName='\0';
+strcpy(dotPtr+1,"vmd");
+}
 
+static void createVMDFileAndProcessCHTMLFile(const char *chtmlFileName,const char *pathToVMDFile)
+{}
+static void processCHTMLFileWithoutCreatingVMDFile(const char *chtmlFileName,const char *pathToVMDFile)
+{}
+
+public:
+//more parameters related to other type of containers will be added later on
+static void processCHTMLFile(const char *chtmlFileName,Request &request,int clientSocketDescriptor)
+{
+if(!FileSystemUtility::directoryExists("vmd_files"))
+{
+if(!FileSystemUtility::createDirectory("vmd_files"))
+{
+//we will implement this later on
+}
+}
+char vmdFileName[257];
+createVMDFileName(chtmlFileName,vmdFileName);
+// look for vmd_files\\whatever.vmd exists or not
+string folderName=string("vmd_files");
+string pathToVMDFile=folderName+string(PATH_SEPARATOR)+string(vmdFileName);
+bool createVMDFile=false;
+if(FileSystemUtility::fileExists(pathToVMDFile.c_str()))
+{
+if(FileSystemUtility::getLastUpdatedTime(chtmlFileName)>FileSystemUtility::getLastUpdatedTime(pathToVMDFile.c_str()))
+{
+createVMDFile=true;
+}
+}
+if(createVMDFile) createVMDFileAndProcessCHTMLFile(chtmlFileName,pathToVMDFile.c_str());
+else
+{
+processCHTMLFileWithoutCreatingVMDFile(chtmlFileName,pathToVMDFile.c_str());
+}
+}
+}; //class TemplateEngine Ends here
 class Bro
 {
 private:

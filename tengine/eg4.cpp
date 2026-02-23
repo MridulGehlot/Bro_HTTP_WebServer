@@ -32,7 +32,22 @@ start=buffer;
 while(1)
 {
 start=strstr(start,"${");
-if(start==NULL) break;
+if(start==NULL) 
+{
+if(x==fileLength) break;
+if(buffer[toRead-1]=='$')
+{
+buffer[0]='$';
+if((fileLength-x)>255) toRead=255;
+else toRead=fileLength-x;
+fread(buffer+1,toRead,1,f);
+buffer[1+toRead]='\0';
+x=x+toRead;
+start=buffer;
+continue;
+}
+else break;
+}
 end=strstr(start+2,"}");
 if(end!=NULL)
 {
